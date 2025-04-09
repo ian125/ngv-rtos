@@ -1,5 +1,9 @@
 #include "bsw.h"
 
+void ErrorHook(StatusType error)
+{
+    printfSerial("[ErrorHook: error = %d, service = %d, TaskID = %d]", error, OSErrorGetServiceId(), OSError_GetTaskState_TaskID());
+}
 
 ISR2(TimerISR)
 {
@@ -20,16 +24,16 @@ ISR2(ButtonISR)
     a0 = readADCValue(3);
     if (a0 < 500) {
         printfSerial("<BUTTON:T>");
-        SetEvent(SensorTask, Event1);
+        SetEvent(SensorTask, EventFront);
     } else if (a0 < 1200) {
         printfSerial("<BUTTON:D>");
         ShutdownOS(1);
     } else if (a0 < 1600) {
         printfSerial("<BUTTON:L>");
-        SetEvent(SensorTask, Event2);
+        SetEvent(SensorTask, EventLeft);
     } else if (a0 < 2200) {
         printfSerial("<BUTTON:R>");
-        SetEvent(SensorTask, Event3);
+        SetEvent(SensorTask, EventRight);
     } else {
         printfSerial("<BUTTON:?>");
     }
@@ -43,20 +47,20 @@ TASK(SensorTask) //Sensor
     printfSerial("SensorTask Begins...");
     while(1){
         printfSerial("SensorTask Waits...");
-        WaitEvent(Event1 | Event2 | Event3);
+        WaitEvent(EventFront | EventLeft | EventRight);
         printfSerial("SensorTask Wakes Up...");
         GetEvent(SensorTask, &mask);
-        if (mask & Event1) {
+        if (mask & EventFront) {
             ActivateTask(AvoidFrontTask);
-            ClearEvent(Event1);
+            ClearEvent(EventFront);
         }
-        if (mask & Event2) {
+        if (mask & EventLeft) {
             ActivateTask(AvoidLeftTask);
-            ClearEvent(Event2);
+            ClearEvent(EventLeft);
         }
-        if (mask & Event3) {
+        if (mask & EventRight) {
             ActivateTask(AvoidRightTask);
-            ClearEvent(Event3);
+            ClearEvent(EventRight);
         }
         printfSerial("SensorTask Finishes...");
     }
